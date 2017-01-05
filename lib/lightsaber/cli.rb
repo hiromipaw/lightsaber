@@ -24,6 +24,7 @@ module Lightsaber
     end
 
     desc "ops COMMANDS", "Trac Operations"
+    
     subcommand "ops", Lightsaber::CLI::Operations
 
   end

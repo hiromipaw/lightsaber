@@ -23,33 +23,33 @@ module Lightsaber
     @@cookies = nil
     @@config = YAML.load_file('config/.cli.yml')
 
-    base_uri 'https://trac.torproject.org/projects/tor'
+    self.base_uri 'https://trac.torproject.org/projects/tor'
 
-    def self.login
-      page = self.get("/login")
+    def login
+      page = self.class.get("/login")
       @@token = page.xpath("//input[@name='__FORM_TOKEN']")[0]['value']
-      response = self.post("/login", self.login_options)
+      response = self.class.post("/login", login_options)
       if response.code == 303
-        self.login_redirect(response)
+        login_redirect(response)
       else
         return [response.code, response.message]
       end
     end
 
-    def self.ticket(ticket)
-      self.login if @@cookies.nil?
+    def ticket(ticket)
+      login if @@cookies.nil?
 
-      response = self.get("/ticket/#{ticket}", self.request_options)
+      response = self.class.get("/ticket/#{ticket}", request_options)
       if response.code == 200
         parsed_res = Nokogiri::HTML(response.body)
         t = {
           ticket: {
-            ticket_id: self.parse_id(parsed_res.xpath("//a[@class='trac-id']")),
-            date: self.parse_date(parsed_res.xpath("//div[@class='date']//p")),
+            ticket_id: parse_id(parsed_res.xpath("//a[@class='trac-id']")),
+            date: parse_date(parsed_res.xpath("//div[@class='date']//p")),
             summary: parsed_res.xpath("//span[@class='summary']").text,
-            properties: self.parse_properties(parsed_res.xpath("//table[@class='properties']//tr")),
-            description: self.parse_description(parsed_res.xpath("//div[@class='description']")),
-            changelog: self.parse_log(parsed_res.xpath("//div[@class='change']"))
+            properties: parse_properties(parsed_res.xpath("//table[@class='properties']//tr")),
+            description: parse_description(parsed_res.xpath("//div[@class='description']")),
+            changelog: parse_log(parsed_res.xpath("//div[@class='change']"))
           }
         }
       else
@@ -57,23 +57,42 @@ module Lightsaber
       end
     end
 
+    def tickets(options)
+      login if @@cookies.nil?
+
+      if options[:query]
+        @response = self.class.get("/query?#{options[:query]}")
+      else
+        filter = options[:filter] || 1
+        page = options[:page] || 1
+        asc = options[:asc] || 1
+        sort = options[:sort] || 'component'
+        @response = self.class.get("/report/#{filter}?page=#{page}&asc=#{asc}&sort=#{sort}", request_options)
+      end
+
+      if @response.code == 200
+        parsed_res = Nokogiri::HTML(@response.body)
+        pp parse_filtered(parsed_res.xpath("//tr"))
+      end
+    end
+
     private
 
-    def self.parse_id(container)
+    def parse_id(container)
       {
         id: container[0].text,
-        href: base_uri + container[0].values[0]
+        href: self.class.base_uri + container[0].values[0]
       }
     end
 
-    def self.parse_date(container)
+    def parse_date(container)
       {
         created_at: container[0].text,
         updated_at: container[1].text
       }
     end
 
-    def self.parse_properties(container)
+    def parse_properties(container)
       properties = []
       container.each do |elem|
         elem.children.each do |child|
@@ -95,31 +114,51 @@ module Lightsaber
       return Hash[*properties]
     end
 
-    def self.parse_description(container)
+    def parse_description(container)
       description = []
       container.children.each do |child|
         c = child.text.strip
-        description << c unless c.empty?
+        description << c.gsub(/\s+/, " ") unless c.empty?
       end
       return description.join
     end
 
-    def self.parse_log(container)
+    def parse_log(container)
       logs = []
       container.children.each do |child|
         c = child.text.strip
-        logs << c unless c.empty?
+        logs << c.gsub(/\s+/, " ") unless c.empty?
       end
       return logs
     end
 
-    def self.login_options
+    def parse_filtered(container)
+      tickets = []
+      container.each do |child|
+        tickets << {ticket: parse_row(child)}
+      end
+      return tickets
+    end
+
+    def parse_row(container)
+      fields = {}
+      container.children.each do |c|
+        value = c.values.join.strip.gsub(/\s+/, " ")
+        text = c.text.strip.gsub(/\s+/, " ")
+        unless value.empty? and text.empty?
+          fields["#{value}"] = text
+        end
+      end
+      return fields
+    end
+
+    def login_options
       {
         body: {
           user: @@config['USERNAME'],
           password: @@config['PASSWORD'],
           __FORM_TOKEN: @@token,
-          referer: base_uri
+          referer: self.class.base_uri
         },
         headers: {
           Cookie: "trac_form_token=#{@@token}"
@@ -128,12 +167,12 @@ module Lightsaber
       }
     end
 
-    def self.request_options
+    def request_options
       { body: {
           user: @@config['USERNAME'],
           password: @@config['PASSWORD'],
           __FORM_TOKEN: @@token,
-          referer: base_uri
+          referer: self.class.base_uri
         },
         headers: {
           Cookie: "trac_form_token=#{@@token};#{@@cookies.split(';')[0]}",
@@ -142,9 +181,9 @@ module Lightsaber
       }
     end
 
-    def self.login_redirect(response)
+    def login_redirect(response)
       @@cookies = response.headers['set-cookie']
-      response = self.get(response.headers['location'])
+      response = self.class.get(response.headers['location'])
       if response.code == 200
         puts Nokogiri::HTML(response.body).xpath("//h1[@style='color: green']").text()
       else

@@ -24,9 +24,25 @@ Or install it yourself as:
 
 TODO: Write usage instructions here
 
+You can use lightsaber as an installed gem or by its own directory by prepending:
+
+    $ bundle exec bin/lightsaber
+
+To get help:
+
+    $ lightsaber help
+
+Or to get help on a specific command:
+
+    $ lightsaber help ops
+
+Or for a sub command:
+
+    $ lightsaber ops help filter_tickets
+
 To retrieve a ticket:
 
-    $ bundle exec bin/lightsaber ops get_ticket --ticket 12412
+    $ lightsaber ops get_ticket --ticket 12412
 
 More functionalities coming up soon
 
