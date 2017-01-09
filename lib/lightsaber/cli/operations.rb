@@ -149,10 +149,23 @@ module Lightsaber
         pp response
       end
 
+      desc "create_ticket",
+           "This will create a ticket."
       def create_ticket
         puts "So you want to create a ticket? I will log you in first."
         trac = Trac.new
-        
+        ticket = trac.create_ticket
+        puts ticket
+      end
+
+      desc "create_ticket",
+           "This will create a ticket."
+      option :ticket
+      def reply_ticket
+        puts "So you want to reply to ticket #{options[:ticket]}? I will log you in first."
+        trac = Trac.new
+        ticket = trac.reply_ticket(options[:ticket])
+        puts ticket
       end
     end
   end

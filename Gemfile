@@ -1,5 +1,6 @@
 source 'https://rubygems.org'
 
+gem "highline"
 gem "httparty"
 gem "nokogiri"
 gem "thor"
