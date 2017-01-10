@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["hiro@torproject.org"]
 
   spec.summary       = %q{Lightsaber is a cli for Trac wiki and ticketing system using http calls.}
-  spec.description   = %q{Lightsaber is a simple wiki for Trac wiki and ticketing system.
+  spec.description   = %q{Lightsaber is a simple cli for Trac wiki and ticketing system.
                           It uses xmlrpc by wrapping console commands around HTTP protocol calls.}
   spec.homepage      = "https://rubygems.org/gems/lightsaber"
 
