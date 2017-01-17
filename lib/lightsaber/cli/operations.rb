@@ -4,10 +4,10 @@ module Lightsaber
       desc "get_ticket --ticket <ticket number>", "This will get you the ticket you want"
       option :ticket
       def get_ticket
-        puts "I can get you a ticket. I will log you in first."
+        puts "Fetching ticket: #{options[:ticket]}"
         trac = Trac.new
         response = trac.ticket(options[:ticket])
-        pp response
+        puts response
       end
 
       desc "filter_tickets --filter <filter> [OPTIONS]",
@@ -146,7 +146,7 @@ module Lightsaber
         puts "I can get you all the tickets. I will log you in first."
         trac = Trac.new
         response = trac.tickets(options)
-        pp response
+        puts response
       end
 
       desc "create_ticket",

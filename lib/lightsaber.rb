@@ -44,15 +44,34 @@ module Lightsaber
       if response.code == 200
         parsed_res = Nokogiri::HTML(response.body)
         t = {
-          ticket: {
-            ticket_id: parse_id(parsed_res.xpath("//a[@class='trac-id']")),
-            date: parse_date(parsed_res.xpath("//div[@class='date']//p")),
-            summary: parsed_res.xpath("//span[@class='summary']").text,
-            properties: parse_properties(parsed_res.xpath("//table[@class='properties']//tr")),
-            description: parse_description(parsed_res.xpath("//div[@class='description']")),
-            changelog: parse_log(parsed_res.xpath("//div[@class='change']"))
-          }
+          ticket_id: parse_id(parsed_res.xpath("//a[@class='trac-id']")),
+          date: parse_date(parsed_res.xpath("//div[@class='date']//p")),
+          summary: parsed_res.xpath("//span[@class='summary']").text,
+          properties: parse_properties(parsed_res.xpath("//table[@class='properties']//tr")),
+          description: parse_description(parsed_res.xpath("//div[@class='description']")),
+          changelog: parse_log(parsed_res.xpath("//div[@class='change']"))
         }
+        return "
+                id: #{t[:ticket_id][:id]}
+
+                href: #{t[:ticket_id][:href]}
+
+                created: #{t[:date][:created_at]}
+
+                updated: #{t[:date][:updated_at]}
+
+                summary: #{t[:summary]}
+
+                properties:
+
+                #{t[:properties].map { |key, value| "#{key} #{value}"}.join("\n                \n                ")}
+
+                description: #{t[:description].gsub("Description", "")}
+
+                changelog:
+
+                #{t[:changelog].join("\n                \n                ")}
+               "
       else
         return [response.code, response.message]
       end
@@ -87,11 +106,8 @@ module Lightsaber
       description = page.xpath("//div[@class='searchable']//p").text
       type = page.xpath("//span[@class='trac-type']//a").text
       priority = page.xpath("//td[@headers='h_priority']//a").text
-      component = page.xpath("//td[@headers='h_component']//a").text
       severity = page.xpath("//td[@headers='h_severity']//a").text
       milestone = page.xpath("//td[@headers='h_milestone']//a").text
-      start_time = page.xpath("//input[@name='start_time']")[0]['value']
-      view_time = page.xpath("//input[@name='view_time']")[0]['value']
       comment = ask "Type your comment:"
       replyto = ask "Type a reply-to user if any:"
 
@@ -104,7 +120,6 @@ module Lightsaber
           field_type: type,
           field_priority: priority,
           field_severity: severity,
-          field_component: component,
           field_milestone: milestone,
           comment: comment,
           __EDITOR__1: "textarea",
@@ -119,25 +134,25 @@ module Lightsaber
           spf_email: "",
           spfh_mail: "",
           replyto: replyto,
-          start_time: start_time,
-          view_time: view_time,
+          start_time: "#{Time.now.strftime('%s')}000000",
+          view_time: "#{Time.now.strftime('%s')}000000",
           submit: "Submit+changes"
         },
         headers: {
           Cookie: "trac_form_token=#{@@token};#{@@cookies.split(';')[0]}",
-          contentType: "application/x-www-form-urlencoded",
+          contentType: "application/json",
         },
         follow_redirects: false
       }
 
       pp options
 
-      response = self.class.post("/ticket/#{ticket}#trac-add-comment", options)
+      response = self.class.post("/ticket/#{ticket}", options)
       if response.code == 303
         url = response.headers['location']
         response = self.class.get(url)
         if response.code == 200
-          puts "Ticket updated: #{url}"
+          puts "Ticket created: #{url}"
         else
           return [response.code, response.message]
         end
@@ -272,7 +287,7 @@ module Lightsaber
     def parse_filtered(container)
       tickets = []
       container.each do |child|
-        tickets << {ticket: parse_row(child)}
+        tickets << "\n#{parse_row(child)}"
       end
       return tickets
     end
@@ -286,7 +301,7 @@ module Lightsaber
           fields["#{value}"] = text
         end
       end
-      return fields
+      return fields.map { |key, value| "#{key}: #{value}"}.join("\n                \n                ")
     end
 
     def login_options

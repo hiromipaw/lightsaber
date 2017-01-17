@@ -1,8 +1,8 @@
 # Lightsaber
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/lightsaber`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+Welcome! Lightsaber is a small utility used to interact with Tor Trac installation.
+You can easily customise it to interact with any Trac installation, although you
+might have to change some of the HTML parsing.
 
 ## Installation
 
@@ -34,7 +34,14 @@ To get help:
 
 Or to get help on a specific command:
 
-    $ lightsaber help ops
+    $ lightsaber ops help
+
+    lightsaber operations create_ticket                               
+    lightsaber operations create_ticket                               
+    lightsaber operations filter_tickets --filter <filter> [OPTIONS]  
+    lightsaber operations get_ticket --ticket <ticket number>         
+    lightsaber operations help [COMMAND]                              
+
 
 Or for a sub command:
 
@@ -44,7 +51,13 @@ To retrieve a ticket:
 
     $ lightsaber ops get_ticket --ticket 12412
 
-More functionalities coming up soon
+To start using Lightsaber you need a file called `.cli.yml` under `config/`.
+This file will contain username and password for Trac installation:
+
+```
+USERNAME: "username"
+PASSWORD: "password"
+```
 
 ## Development
 
